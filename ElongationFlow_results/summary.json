@@ -1,0 +1,56 @@
+{
+  "config": {
+    "beads": 30,
+    "chains": 64,
+    "wi": 1.0,
+    "dt": 0.0001,
+    "strain": 5.0,
+    "equilibration": 10.0,
+    "H": 1.0,
+    "gamma": 1.0,
+    "kBT": 1.0,
+    "epsilon_ev": 1.0,
+    "sigma_ev": 1.0,
+    "seed": 2026,
+    "workers": 8,
+    "tau_H": 91.2724443239419,
+    "equilibration_steps": 9127245,
+    "calibration_steps": 2738174,
+    "tau_mode": 210.15156844733488,
+    "lambda": 105.07578422366744,
+    "x_eq": 9.705642885405748,
+    "strain_rate": 0.009516940628978511,
+    "flow_steps": 5253790,
+    "snapshot_steps": [
+      0,
+      1050758,
+      2416743,
+      5253790
+    ]
+  },
+  "calibration": {
+    "tau_mode": 210.15156844733488,
+    "r_squared": 0.970086510078601,
+    "x_eq": 9.705642885405748,
+    "fit_start": 19.166700000000002,
+    "fit_end": 136.905,
+    "rg2_first_half": 26.507308418368787,
+    "rg2_second_half": 26.51183795749062
+  },
+  "no_flow_wall_seconds": 9205.37098810001,
+  "simulation_wall_seconds": 13069.178325100002,
+  "total_wall_seconds": 13087.358941700004,
+  "records_per_chain": 501,
+  "actual_flow_time": 525.379,
+  "actual_final_strain": 5.000000750712101,
+  "classification_status": "pending_manual_review",
+  "notes": [
+    "Independent replicas; WCA acts on all bead pairs within each chain, no inter-chain forces or HI.",
+    "Batch SeedSequence(seed, spawn_key=(phase, start)); changing worker count preserves random streams.",
+    "Finite burn-in: compare longer equilibration and smaller dt before physical conclusions.",
+    "lambda=tau_mode/2 defines Wi here; this is not a measured DNA recoil time.",
+    "Normalize every chain by the same measured x_eq, not per-chain x(0) or instantaneous contour length.",
+    "Only four shape frames are retained. Shape classes require visual review; three classes are not guaranteed.",
+    "Hookean springs have no finite maximum length or topological non-crossing constraint; kinked is not a knot."
+  ]
+}

@@ -27,17 +27,17 @@ import parameters as p
 import time_stepping as ts
 
 
-def fit_power_law(N, values):
-    """对 log(values)-log(N) 作直线拟合。"""
+def fit_power_law(N, values, theory_slope):
+    """拟合 log-log 斜率，偏差定义为拟合斜率减去理论指数。"""
     x = np.log(np.asarray(N, dtype=float))
     y = np.log(np.asarray(values, dtype=float))
     coefficient, covariance = np.polyfit(x, y, 1, cov=True)
-    residual = y - np.polyval(coefficient, x)
     return {
         "slope": float(coefficient[0]),
         "intercept": float(coefficient[1]),
         "slope_se": float(np.sqrt(covariance[0, 0])),
-        "r_squared": float(1 - np.sum(residual**2) / np.sum((y - y.mean())**2)),
+        "theory_slope": float(theory_slope),
+        "slope_deviation": float(coefficient[0] - theory_slope),
     }
 
 
@@ -47,7 +47,7 @@ def simulate_chain_length(N, config):
     rng = np.random.default_rng(
         np.random.SeedSequence(config["seed"], spawn_key=(int(N),))
     )
-    r = nc.initialize_chain("Hookean", M, N, kBT, H, sigma=1.0, rng=rng)
+    r = nc.initialize_chain("Hookean", M, N, kBT, H, epsilon=0.0, sigma=0.0, rng=rng)
     velocity_gradient = np.zeros((3, 3))
     tau_theory = float(ob.theoretical_relaxation_time(N, H, gamma))
     n_steps = int(np.ceil(config["duration"] * tau_theory / dt))
@@ -67,7 +67,7 @@ def simulate_chain_length(N, config):
     for step in range(1, n_steps + 1):
         r = ts.euler_maruyama_step(
             "Hookean", r, velocity_gradient, kBT, gamma, H,
-            1.0, dt, 1.0, 1.0, rng,  # Hookean 力不使用 Q0_square。
+            1.0, dt, 0.0, 1.0, rng,  # 无排除体积；Hookean 力不使用 Q0_square。
         )
         if step % save_every == 0 or step == n_steps:
             record(step)
@@ -129,7 +129,7 @@ def plot_results(results, fits, config, output_dir, show=False):
     )
     panels = [
         ("rg", "rg_rms", "rg_rms_theory",
-         r"$\log R_g$", "Equilibrium single-chain size"),
+         r"$\log R_g$", "Radius of gyration"),
         ("tau", "tau", "tau_theory",
          r"$\log\tau_R$", "Longest mode correlation time"),
     ]
@@ -149,7 +149,8 @@ def plot_results(results, fits, config, output_dir, show=False):
             )
             note = (
                 f'Slope = {fit["slope"]:.3f}\n'
-                f'R$^2$ = {fit["r_squared"]:.4f}'
+                f'$\\Delta$ = {fit["slope_deviation"]:+.3f} '
+                f'(theory: {fit["theory_slope"]:.3f})'
             )
         else:
             note = "Insufficient decaying correlations for a fit"
@@ -163,8 +164,8 @@ def plot_results(results, fits, config, output_dir, show=False):
         ax.grid(alpha=0.25)
         ax.legend(loc="lower right", fontsize=8)
     fig.suptitle(
-        f'M={config["chains"]}, dt={config["dt"]:g}, '
-        f'T={config["duration"]:g} tau_theory per N',
+        fr'$M={config["chains"]}, \, \mathrm{{d}}t={config["dt"]:g}$, '
+        fr'$T={config["duration"]:g} \tau_\mathrm{{theory}}(N)$ (Hooke)',
         fontsize=12,
     )
     fig.canvas.draw()
@@ -186,7 +187,7 @@ def plot_results(results, fits, config, output_dir, show=False):
     ax.axvspan(config["fit_start"], config["fit_end"], color="grey", alpha=0.1)
     ax.set(
         xlabel=r"$t/\tau_{\rm theory}$", ylabel=r"$C_1(t)$",
-        title="First-mode correlations and fitting window",
+        title="First-mode correlations and fitting window (Hooke)",
         xlim=(0, config["duration"]),
     )
     ax.legend(ncol=3, fontsize=8)
@@ -222,6 +223,7 @@ def save_results(results, fits, config, output_dir, geometry):
             "Each N runs for about duration*tau_theory; fit-start and fit-end are in units of tau_theory.",
             "The theory only sets run length, sampling, fit window, and reference curves; bead dynamics determine the measured values.",
             "Both plot boxes have width:height=4:3 and the same dimensions.",
+            "slope_deviation = fitted slope - theory_slope; theory slopes are 0.5 for Rg and 2 for tau without excluded volume.",
             "A non-decaying or non-positive correlation fit is omitted, never replaced by theory.",
         ],
     }
@@ -303,9 +305,9 @@ def main():
     measured_tau = np.array([row["tau"] for row in results])
     valid = np.isfinite(measured_tau) & (measured_tau > 0)
     fits = {
-        "rg": fit_power_law(bead_numbers, [row["rg_rms"] for row in results]),
+        "rg": fit_power_law(bead_numbers, [row["rg_rms"] for row in results], 0.5),
         "tau": (
-            fit_power_law(np.array(bead_numbers)[valid], measured_tau[valid])
+            fit_power_law(np.array(bead_numbers)[valid], measured_tau[valid], 2.0)
             if valid.sum() >= 3 else None
         ),
     }

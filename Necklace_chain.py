@@ -53,6 +53,7 @@ def initialize_chain(
         N:int,
         kBT: float,
         H: float, 
+        epsilon: float,
         sigma: float,
         rng,
         dimension=3,
@@ -60,6 +61,29 @@ def initialize_chain(
         max_trials=1000,
         max_restarts=100,
 ):
+    if epsilon == 0 :
+        if name == "Hookean":
+            q = np.sqrt(kBT / H) * rng.standard_normal(size=(M, N - 1, dimension))
+            r = np.zeros((M, N, dimension))                                          
+            r[:, 1:, :] = np.cumsum(q, axis=1)
+            r -= r.mean(axis=1, keepdims=True)
+            return r
+        else:
+            direction = rng.standard_normal(size=(M, N - 1, dimension))
+            norm = np.linalg.norm(direction, axis=-1, keepdims=True)
+            direction /= norm
+            x = rng.beta(
+                dimension / 2,
+                1 + H * Q0_square / (2 * kBT),
+                size = (M, N - 1,1)
+            )
+            q = np.sqrt(Q0_square * x) * direction
+            r = np.zeros((M, N, dimension))                                          
+            r[:, 1:, :] = np.cumsum(q, axis=1)
+            r -= r.mean(axis=1, keepdims=True)
+            return r
+
+    
     min_distance = 2**(1/6) * sigma
     min_distance2 = min_distance**2
 
