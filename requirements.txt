@@ -1,0 +1,5 @@
+# Shared dependencies for all simulation and plotting entry points.
+numpy>=2.0
+matplotlib>=3.8
+numba>=0.61
+scipy>=1.13

@@ -46,7 +46,7 @@ from time import perf_counter
 
 import numpy as np
 
-import Necklace_chain as nc
+import necklace_chain as nc
 import observables as ob
 import time_stepping as ts
 

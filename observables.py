@@ -14,10 +14,12 @@ def obervables(r):
 
     return rg2, end2, span_x
 
+
 def theoretical_relaxation_time(N, H, gamma):
     return gamma / (
         4 * H * np.sin(np.pi / (2 * N))**2
     )
+
 
 def first_rouse_mode(r):
     N = r.shape[1]    # r.shape = (M, N, 3)
@@ -37,6 +39,7 @@ def first_rouse_mode(r):
 
     return mode    # shape = (M, 3) 
 
+
 def mode_correlation(mode_history):
     mode_history = np.asarray(mode_history)    # shape = (t, M, 3) 
 
@@ -52,6 +55,7 @@ def mode_correlation(mode_history):
     correlation = np.mean(dot_product, axis=1)    # shape(t,)
 
     return correlation / correlation[0]
+
 
 def fit_relaxation_time(
     time,

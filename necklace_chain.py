@@ -1,4 +1,4 @@
-""" position: r.shape = (M, N, 3)
+""" bead position: r.shape = (M, N, 3)
     M: chain number, N: bead number, the position vector of this bead
     connection vector:  q = r[:, 1:, :] - [:, :-1, :]
     
@@ -7,6 +7,7 @@
 import numpy as np
 
 
+""" 珠间连接向量计算 """
 def connection_vector(
         r: np.ndarray,
 ):
@@ -15,6 +16,7 @@ def connection_vector(
     return q
 
 
+""" 单链总势能计算 """
 def potential_energy(
         r: np.ndarray,
         H: float,
@@ -26,6 +28,7 @@ def potential_energy(
     return potential_energy     # potential_energy.shape=(M,)
 
 
+""" 每个珠子的弹簧力计算 """
 def spring_force(
         name: str,
         r: np.ndarray,
@@ -47,6 +50,7 @@ def spring_force(
     return force
 
 
+""" 初始化链构象，讨论是否考虑EV、弹簧类型 """
 def initialize_chain(
         name: str,
         M: int, 
@@ -90,7 +94,7 @@ def initialize_chain(
     r = np.zeros((M, N, dimension))
     for m in range(M):
         for restart in range(max_restarts):
-            r[m]=0
+            r[m] = 0
             
             for n in range(1, N):
                 for trial in range(max_trials):
@@ -131,6 +135,7 @@ def initialize_chain(
     return r
 
 
+""" 模拟EV效应的WCA势 """
 def WCA_force(
         r: np.ndarray,
         epsilon: float,
