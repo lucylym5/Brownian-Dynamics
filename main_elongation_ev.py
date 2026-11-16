@@ -2,7 +2,7 @@ from pathlib import Path
 from datetime import datetime
 
 import numpy as np
-import matplotlib
+import matplotlib.pyplot as plt
 
 import parameters as p
 import necklace_chain as nc
@@ -50,20 +50,15 @@ def main():
 
     # 日志文件路径
     root_dir = Path(__file__).resolve().parent
-    log_equilibria = root_dir / "results" / "log_equilibria.log"
-    log_elongation = root_dir / "results" / "log_elongation.log"
-    root_dir = Path(__file__).resolve().parent
     run_dir = (
         root_dir / "results"
         / datetime.now().strftime("run_%Y%m%d_%H%M%S_%f")
     )
     run_dir.mkdir(parents=True, exist_ok=False)
 
-    log_equilibria = run_dir / "equilibria.csv"
+    log_equilibria = run_dir / "equilibria.tsv"
     log_elongation = run_dir / "configuration.log"
     log_extension = run_dir / "extension.tsv"
-
-    print(f"结果目录：{run_dir}")
 
 
 
@@ -105,7 +100,6 @@ def main():
 
 
 
-
     """ 开启流场 """
     flow_gradient = p.velocity_gradient(strain_rate)
     tool.output_configuration_log(
@@ -113,14 +107,8 @@ def main():
             0,
             r,
             log_elongation,
+            log_extension,
     )
-
-    _, _, span_x = ob.obervables(r)
-    time_history = [0]
-    span_x_history = [float(span_x.mean())]
-    with log_extension.open("w", encoding="utf-8") as file:
-        file.write("step\ttime_ps\tmean_span_x_A\n")
-        file.write(f"0\t0\t{span_x_history[0]:.17g}\n")
 
     for step in range(1, flow_steps + 1):
         r = ts.fene_newton_step(
@@ -138,36 +126,17 @@ def main():
         if step % p.LOG_STEP == 0 or step == flow_steps:
             time_ps = step * p.TIME_STEP
 
-            _, _, span_x = ob.obervables(r)
-            mean_span_x = float(span_x.mean())
-
-            time_history.append(time_ps)
-            span_x_history.append(mean_span_x)
-
-            # 每个记录点立即写入磁盘。
-            with log_extension.open("a", encoding="utf-8") as file:
-                file.write(
-                    f"{step}\t{time_ps:.17g}\t{mean_span_x:.17g}\n"
-                )
-
             tool.output_configuration_log(
                 step,
                 time_ps,
                 r,
                 log_elongation,
+                log_extension,
             )
 
             print(f"开流，共{flow_steps}步，第{step}步计算完成")
 
-    tool.plot_xy(
-        np.asarray(time_history) * 1e-12,     # ps → s
-        np.asarray(span_x_history) * 1e-4,   # Å → μm
-        xlabel="Time after flow onset (s)",
-        ylabel=r"Mean x-span ($\mu$m)",
-        label="Ensemble mean",
-        title=f"FENE + EV, Wi = {p.WI} (Hookean reference)",
-        save_path=run_dir / "extension.png",
-    )
+    print(f"计算完成，结果目录：{run_dir}")
 
 if __name__ == "__main__":
     main()
