@@ -8,6 +8,7 @@
 
 x 跨度定义为每条链 max(x)-min(x)，不是末端距。
 坐标日志的单位为 Å、ps；图中的单位转换为 μm、s。
+每条链绘制为蓝色细线，黑色粗线为全部单链等权的总体均值。
 本文件独立于 parameters.py，避免用后来修改过的参数解释旧数据。
 """
 
@@ -152,34 +153,33 @@ def _plot_extension(
     wi: float | None,
     end_s: float | None = None,
 ) -> None:
-    """绘制全部单链曲线与逐条链等权的总体均值。"""
+    """用蓝色细线显示单链差异，叠加黑色总体均值，不做平滑。"""
     with matplotlib.rc_context({
         "font.family": "DejaVu Sans", "font.size": 11,
-        "axes.titlesize": 12, "axes.labelsize": 12,
-        "axes.spines.top": False, "axes.spines.right": False,
+        "axes.titlesize": 14, "axes.labelsize": 12,
+        "axes.spines.top": True, "axes.spines.right": True,
         "svg.fonttype": "none", "savefig.facecolor": "white",
     }):
-        fig = Figure(figsize=(8.6, 6.6), layout="constrained")
+        fig = Figure(figsize=(8, 6), layout="constrained")
         FigureCanvasAgg(fig)
         ax = fig.subplots()
-        lines = ax.plot(time_s, span_um, color="#4477AA", alpha=0.23,
-                        linewidth=0.65, zorder=2)
-        lines[0].set_label(f"Individual chains (n = {span_um.shape[1]})")
-        ax.plot(time_s, span_um.mean(axis=1), color="#111111",
-                linewidth=2.1, label="Ensemble mean", zorder=4)
-        ax.set_xlabel("Time after flow onset (s)")
-        ax.set_ylabel(r"x-span ($\mu$m)")
-        title = f"FENE + EV, N = {beads}, M = {span_um.shape[1]}"
+        chains = span_um.shape[1]
+        ax.plot(time_s, span_um, color="#4477AA", alpha=0.4,
+                linewidth=0.8, zorder=2)
+        ax.plot(time_s, span_um.mean(axis=1), color="black",
+                linewidth=2.5, label="Ensemble mean", zorder=4)
+        ax.set_xlabel(r"Time $t$ (s)")
+        ax.set_ylabel(r"Extension $x(t)$ ($\mu$m)")
+        title = f"N={beads}, {chains} independent chains"
         if wi is not None:
-            title += f", Wi = {wi:g}"
-        ax.set_title(title, pad=12)
+            title = f"Wi={wi:g}, " + title
+        ax.set_title(title, pad=8)
         upper_time = float(time_s[-1]) if end_s is None else float(end_s)
         ax.set_xlim(float(time_s[0]), upper_time)
         ax.set_ylim(bottom=0)
-        ax.set_box_aspect(3 / 4)
-        ax.grid(True, color="#D8DDE3", linewidth=0.65, alpha=0.65)
+        ax.grid(True, color="#DDDDDD", linewidth=0.65, alpha=0.65)
         ax.set_axisbelow(True)
-        ax.legend(loc="lower right", frameon=True, facecolor="white", framealpha=0.95)
+        ax.legend(loc="upper left", frameon=True, facecolor="white", framealpha=0.95)
         fig.savefig(output_stem.with_suffix(".png"), dpi=240)
         fig.savefig(output_stem.with_suffix(".svg"))
         fig.clear()

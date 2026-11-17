@@ -4,26 +4,19 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
-import parameters as p
-import necklace_chain as nc
-import time_stepping as ts
-import observables as ob
+from module import parameters as p
+from module import necklace_chain as nc
+from module import time_stepping as ts
+from module import observables as ob
 
-import tool
+from module import tool
 
 def main():
 
     """ 计算前准备 """
-    # 理想 Hookean 链参考松弛时间
-    tau_H = p.GAMMA / (
-        4.0 * p.H * np.sin(np.pi / (2.0 * p.N))**2
-    )
-
-    lambda_H = tau_H / 2.0         # 二阶矩的松弛时间
-    strain_rate = p.WI / lambda_H
 
     # 确定开流时长和积分步数
-    flow_steps = int(np.ceil(p.TOTAL_TIME / p.TIME_STEP))
+    flow_steps = int(np.ceil(p.TOTAL_TIME / p.DT))
 
     print(f"N = {p.N}, M = {p.M}")
     print(f"Wi = {p.WI}")
@@ -64,9 +57,9 @@ def main():
 
     """ 预平衡（无流动）, 3tau_H """ 
     no_flow = p.velocity_gradient(0)
-    equilibria_time = 3 * tau_H
+    equilibria_time = 3 * p.TAU_H
     equilibria_steps = int(
-        np.ceil(equilibria_time / p.TIME_STEP)
+        np.ceil(equilibria_time / p.DT_PRE)
     )
 
     log_step = max(1, equilibria_steps // 200)
@@ -79,7 +72,7 @@ def main():
             gamma = p.GAMMA,
             H = p.H,
             Q0_square = p.Q02,
-            dt = p.TIME_STEP,
+            dt = p.DT_PRE,
             epsilon_ev = p.EPSILON,
             sigma_ev = p.SIGMA,
             rng = rng,
@@ -87,7 +80,7 @@ def main():
         # 记录 200 次回转半径，观察是否达平衡
         if step % log_step == 0 or step == equilibria_steps:
             rg2, end2, _ = ob.obervables(r)
-            time_ps = step * p.TIME_STEP
+            time_ps = step * p.DT_PRE
 
             tool.output_log(
                     step,
@@ -101,7 +94,7 @@ def main():
 
 
     """ 开启流场 """
-    flow_gradient = p.velocity_gradient(strain_rate)
+    flow_gradient = p.velocity_gradient(p.STRAIN_RATE)
     tool.output_configuration_log(
             0,
             0,
@@ -118,13 +111,13 @@ def main():
             gamma = p.GAMMA,
             H = p.H,
             Q0_square = p.Q02,
-            dt = p.TIME_STEP,
+            dt = p.DT,
             epsilon_ev = p.EPSILON,
             sigma_ev = p.SIGMA,
             rng = rng,
         )
         if step % p.LOG_STEP == 0 or step == flow_steps:
-            time_ps = step * p.TIME_STEP
+            time_ps = step * p.DT
 
             tool.output_configuration_log(
                 step,
